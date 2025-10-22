@@ -16,6 +16,20 @@ export async function POST(req: Request) {
     const recaptchaToken = formData.get("recaptchaToken") as string;
     const attachmentFile = formData.get("attachment") as File | null;
 
+    // 🧩 Validate required fields
+    if (!fullName || !phone || !email || !department || !text) {
+      return new Response(
+        JSON.stringify({
+          message: "All required fields must be provided",
+          success: false,
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
     if (!recaptchaToken) {
       return new Response(
         JSON.stringify({
@@ -79,17 +93,64 @@ export async function POST(req: Request) {
     }
 
     const secretKey = "6Lea_N0rAAAAACMMm0pqsYp3zUpUf3UQ5UKd7qge";
-    if (!secretKey) throw new Error("reCAPTCHA Secret Key not configured");
+    if (!secretKey) {
+      return new Response(
+        JSON.stringify({
+          message: "reCAPTCHA Secret Key not configured",
+          success: false,
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
 
-    const recaptchaResponse = await fetch(
-      `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${recaptchaToken}`,
-      { method: "POST" }
-    );
-    const recaptchaResult = await recaptchaResponse.json();
+    // 🧩 Validate reCAPTCHA with better error handling
+    try {
+      const recaptchaResponse = await fetch(
+        `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${recaptchaToken}`,
+        { method: "POST" }
+      );
+      
+      if (!recaptchaResponse.ok) {
+        return new Response(
+          JSON.stringify({
+            message: "reCAPTCHA verification service unavailable",
+            success: false,
+          }),
+          {
+            status: 500,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
 
-    if (!recaptchaResult.success) {
-      throw new Error(
-        `reCAPTCHA validation failed: ${JSON.stringify(recaptchaResult)}`
+      const recaptchaResult = await recaptchaResponse.json();
+
+      if (!recaptchaResult.success) {
+        return new Response(
+          JSON.stringify({
+            message: "reCAPTCHA validation failed. Please try again.",
+            success: false,
+          }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
+    } catch (recaptchaError) {
+      console.error("reCAPTCHA verification error:", recaptchaError);
+      return new Response(
+        JSON.stringify({
+          message: "reCAPTCHA verification failed. Please try again.",
+          success: false,
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
       );
     }
 
@@ -113,16 +174,31 @@ export async function POST(req: Request) {
     const { data, error } = await resend.emails.send(emailData);
 
     if (error) {
-      return new Response(JSON.stringify({ error, success: false }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      console.error("Resend email error:", error);
+      return new Response(
+        JSON.stringify({ 
+          message: "Failed to send email. Please try again later.",
+          success: false,
+          error: error 
+        }), 
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
-    return new Response(JSON.stringify({ data, success: true }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ 
+        message: "Email sent successfully",
+        success: true,
+        data 
+      }), 
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   } catch (error: unknown) {
     console.error("Error sending email:", error);
     return new Response(

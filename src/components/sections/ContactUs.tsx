@@ -449,13 +449,20 @@ const ContactForm: React.FC<{
         return;
       }
   
-      const token = await recaptchaRef.current.executeAsync();
-      if (!token) {
-        toast.error("Failed to get reCAPTCHA token");
+      setIsSubmitting(true);
+  
+      // 🧩 Get reCAPTCHA token with proper error handling
+      let token: string | null = null;
+      try {
+        token = await recaptchaRef.current.executeAsync();
+        if (!token) {
+          throw new Error("reCAPTCHA returned null token");
+        }
+      } catch (recaptchaError) {
+        console.error("reCAPTCHA error:", recaptchaError);
+        toast.error("reCAPTCHA verification failed. Please try again.");
         return;
       }
-  
-      setIsSubmitting(true);
   
       const formData = new FormData();
       formData.append("fullName", data.fullName);
@@ -708,6 +715,14 @@ const ContactForm: React.FC<{
           ref={recaptchaRef}
           size="invisible"
           className="absolute"
+          onErrored={() => {
+            console.error("reCAPTCHA failed to load");
+            toast.error("reCAPTCHA failed to load. Please refresh the page.");
+          }}
+          onExpired={() => {
+            console.warn("reCAPTCHA token expired");
+            toast.error("reCAPTCHA expired. Please try again.");
+          }}
         />
       </form>
     </div>
