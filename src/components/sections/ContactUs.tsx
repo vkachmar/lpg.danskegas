@@ -444,18 +444,19 @@ const ContactForm: React.FC<{
         toast.error("reCAPTCHA not loaded");
         return;
       }
-
+  
       if (attachment && !validateAttachment(attachment)) {
         return;
       }
-
+  
       const token = await recaptchaRef.current.executeAsync();
       if (!token) {
         toast.error("Failed to get reCAPTCHA token");
         return;
       }
+  
       setIsSubmitting(true);
-
+  
       const formData = new FormData();
       formData.append("fullName", data.fullName);
       formData.append("phone", data.phone);
@@ -463,39 +464,54 @@ const ContactForm: React.FC<{
       formData.append("department", data.department);
       formData.append("contents", data.comment);
       formData.append("recaptchaToken", token);
-
+  
       if (attachment) {
         formData.append("attachment", attachment);
       }
-
+  
       const response = await fetch("/api/send-email", {
         method: "POST",
-        // headers: {
-        //   "Content-Type": "application/json",
-        // },
         body: formData,
       });
-
-      const result = await response.json();
-
-      if (result.success) {
+  
+      // 🧩 Check if response is okay before parsing
+      if (!response.ok) {
+        const text = await response.text();
+        console.error("API Error Response:", text);
+        toast.error("Failed to send email. Please try again later.");
+        return;
+      }
+  
+      // 🧩 Try to safely parse response JSON
+      let result;
+      try {
+        result = await response.json();
+      } catch (err) {
+        const text = await response.text();
+        console.error("Invalid JSON response:", text);
+        toast.error("Unexpected server response. Please try again.");
+        return;
+      }
+  
+      // 🧩 Handle success or failure
+      if (result?.success) {
         toast.success("Email sent successfully. We will contact you soon.");
         reset();
         setAttachment(null);
         setAttachmentError("");
         if (fileInputRef.current) fileInputRef.current.value = "";
       } else {
-        toast.error(
-          result.message || "Failed to send email. Please try again."
-        );
+        toast.error(result?.message || "Failed to send email. Please try again.");
       }
     } catch (error) {
-      toast.error("An error occurred. Please try again.");
+      console.error("Client-side error:", error);
+      toast.error("An unexpected error occurred. Please try again.");
     } finally {
       setIsSubmitting(false);
       if (recaptchaRef.current) recaptchaRef.current.reset();
     }
   };
+  
 
   const isDesktop = layout === "desktop";
   const isTablet = layout === "tablet";
