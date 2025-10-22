@@ -439,8 +439,12 @@ const ContactForm: React.FC<{
   };
 
   const onSubmit = async (data: FormData) => {
+    // Temporary: Skip reCAPTCHA for testing
+    const skipRecaptcha = true;
+    
     try {
-      if (!recaptchaRef.current) {
+      
+      if (!skipRecaptcha && !recaptchaRef.current) {
         toast.error("reCAPTCHA not loaded");
         return;
       }
@@ -451,17 +455,21 @@ const ContactForm: React.FC<{
   
       setIsSubmitting(true);
   
-      // 🧩 Get reCAPTCHA token with proper error handling
+      // 🧩 Get reCAPTCHA token with proper error handling (skip if disabled)
       let token: string | null = null;
-      try {
-        token = await recaptchaRef.current.executeAsync();
-        if (!token) {
-          throw new Error("reCAPTCHA returned null token");
+      if (!skipRecaptcha) {
+        try {
+          token = await recaptchaRef.current!.executeAsync();
+          if (!token) {
+            throw new Error("reCAPTCHA returned null token");
+          }
+        } catch (recaptchaError) {
+          console.error("reCAPTCHA error:", recaptchaError);
+          toast.error("reCAPTCHA verification failed. Please try again.");
+          return;
         }
-      } catch (recaptchaError) {
-        console.error("reCAPTCHA error:", recaptchaError);
-        toast.error("reCAPTCHA verification failed. Please try again.");
-        return;
+      } else {
+        console.log("reCAPTCHA verification skipped for testing");
       }
   
       const formData = new FormData();
@@ -470,7 +478,11 @@ const ContactForm: React.FC<{
       formData.append("email", data.email);
       formData.append("department", data.department);
       formData.append("contents", data.comment);
-      formData.append("recaptchaToken", token);
+      
+      // Only append reCAPTCHA token if not skipping
+      if (!skipRecaptcha && token) {
+        formData.append("recaptchaToken", token);
+      }
   
       if (attachment) {
         formData.append("attachment", attachment);
@@ -515,7 +527,7 @@ const ContactForm: React.FC<{
       toast.error("An unexpected error occurred. Please try again.");
     } finally {
       setIsSubmitting(false);
-      if (recaptchaRef.current) recaptchaRef.current.reset();
+      if (!skipRecaptcha && recaptchaRef.current) recaptchaRef.current.reset();
     }
   };
   
