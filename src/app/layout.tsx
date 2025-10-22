@@ -124,6 +124,10 @@ export default function RootLayout({
         />
         <FooterWrapper />
         <GoogleAnalytics/>
+        <Script
+          src="https://www.google.com/recaptcha/enterprise.js?render=6LeJ0fIrAAAAAAzv0TGeCLDsUBsdXahf5QgaHNTS"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );

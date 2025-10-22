@@ -711,7 +711,7 @@ const ContactForm: React.FC<{
           </Button>
         </div>
         <ReCAPTCHA
-          sitekey="6Lea_N0rAAAAAHXHyTOOH_dBRtKDrAX1I7_r3B2c"
+          sitekey="6LeJ0fIrAAAAAAzv0TGeCLDsUBsdXahf5QgaHNTS"
           ref={recaptchaRef}
           size="invisible"
           className="absolute"

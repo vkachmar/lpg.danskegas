@@ -92,7 +92,8 @@ export async function POST(req: Request) {
       };
     }
 
-    const secretKey = "6Lea_N0rAAAAACMMm0pqsYp3zUpUf3UQ5UKd7qge";
+    // TODO: Replace with your actual Enterprise secret key
+    const secretKey = process.env.RECAPTCHA_SECRET_KEY || "6LeJ0fIrAAAAACMMm0pqsYp3zUpUf3UQ5UKd7qge";
     if (!secretKey) {
       return new Response(
         JSON.stringify({
@@ -109,7 +110,7 @@ export async function POST(req: Request) {
     // 🧩 Validate reCAPTCHA with better error handling
     try {
       const recaptchaResponse = await fetch(
-        `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${recaptchaToken}`,
+        `https://www.google.com/recaptcha/enterprise/siteverify?secret=${secretKey}&response=${recaptchaToken}`,
         { method: "POST" }
       );
       
