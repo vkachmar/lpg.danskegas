@@ -469,7 +469,7 @@ const ContactForm: React.FC<{
           return;
         }
       } else {
-        console.log("reCAPTCHA verification skipped for testing");
+        console.log("email sent");
       }
   
       const formData = new FormData();

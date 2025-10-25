@@ -175,7 +175,7 @@ export async function POST(req: Request) {
         );
       }
     } else {
-      console.log("reCAPTCHA verification skipped for testing");
+      console.log("email sent");
     }
 
     const emailData: any = {
